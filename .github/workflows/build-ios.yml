@@ -1,0 +1,53 @@
+name: Build iOS IPA
+
+on:
+    push:
+        branches: [ main ]
+    workflow_dispatch: # 手動で実行するためのボタンを表示
+
+jobs:
+    build:
+        runs-on: macos-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                targets: aarch64-apple-ios
+
+            - name: Rust Cache
+              uses: Swatinem/rust-cache@v2
+
+            - name: Build for iOS
+              run: |
+                    cargo build --release --target aarch64-apple-ios
+
+            - name: Create IPA Package
+              run: |
+                # 1. まずplistの改行コード(CRLF)やフォーマットをiOS標準に自動変換・修正する
+                plutil -convert xml1 Info.plist
+                
+                # アプリのフォルダ構造を作成
+                rm -rf Payload
+                mkdir -p Payload/BevyApp.app
+
+                # ビルドされたバイナリをコピー
+                cp target/aarch64-apple-ios/release/bevy_animated_transform Payload/BevyApp.app/BevyApp
+                chmod +x Payload/BevyApp.app/BevyApp
+
+                # Info.plist をコピー
+                cp Info.plist Payload/BevyApp.app/Info.plist
+                
+                # 新設：おとり用のフォルダ「dist」を作り、その中に本物のipaを落とす
+                mkdir dist
+                zip -r dist/BevyApp.ipa Payload
+
+
+            - name: Upload Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: BevyApp-IPA
+                path: dist/
+

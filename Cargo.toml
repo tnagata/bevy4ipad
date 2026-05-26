@@ -1,0 +1,15 @@
+[package]
+name = "bevy_animated_transform"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95.0"
+
+[dependencies]
+bevy = { git = "https://github.com/bevyengine/bevy", features = ["bevy_animation"] }
+
+[profile.release]
+# iOSアプリとして動作を軽くするため、最適化設定を追加
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
